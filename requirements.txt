@@ -1,0 +1,6 @@
+pymongo
+flask
+Flask-Cors
+scikit-learn
+newsapi-python
+# difflib
