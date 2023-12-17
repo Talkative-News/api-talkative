@@ -169,8 +169,62 @@ def search_article():
 
     return jsonify(response_data)
 
-        
-    
+@app.route('/get-data-pagination', methods=['GET'])
+def get_by_pagination():
+    query = request.args.get('query')
+
+    # Perform newsapi search and fetch articles
+    all_articles = newsapi.get_everything(q=query)
+    articles_list = all_articles['articles'] if 'articles' in all_articles else []
+
+    # Prepare articles from NewsAPI
+    emp = []
+    for item in articles_list:
+        new_date = item['publishedAt'].split("T")
+        data_new = {
+            'author': item['author'],
+            'title': item['title'],
+            'description': item['description'],
+            'url': item['url'],
+            'publishedAt': new_date[0],
+            'content': item['content']
+        }
+        emp.append(data_new)
+
+    # Retrieve articles from MongoDB
+    mongo_data = collection_article.find()
+    for data in mongo_data:
+        new_data = {
+            'author': data.get('author'),
+            'title': data.get('title'),
+            'description': data.get('description'),
+            'url': data.get('url'),
+            'publishedAt': data.get('publishedAt'),
+            'content': data.get('content')
+        }
+        emp.append(new_data)
+
+    # Calculate similarity ratio
+    threshold = 0.3
+    for article in emp:
+        sim = difflib.SequenceMatcher(None, article['title'].lower(), query.lower())
+        similarity_ratio = sim.ratio()
+        article['similarity_ratio'] = similarity_ratio if similarity_ratio > threshold else None
+
+    # Pagination logic
+    page = int(request.args.get('page'))
+    limit = int(request.args.get('limit'))
+    start_idx = (page - 1) * limit
+    end_idx = start_idx + limit
+    paginated_data = emp[start_idx:end_idx]
+
+    # Prepare response with paginated data
+    response_data = {
+        "status": 200,
+        "data": paginated_data
+    }
+
+    return jsonify(response_data)
 
 
 if __name__ == '__main__':

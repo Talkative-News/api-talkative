@@ -20,9 +20,9 @@ services:
     image: mongo:latest
     hostname: talkative_mongodb
     environment:
-      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=talkative_db
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=pass
     volumes:
       - ./init-db.js:/docker-entrypoint-initdb.d/init-db.js:ro
     ports:
