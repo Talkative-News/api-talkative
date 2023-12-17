@@ -6,13 +6,14 @@ from dotenv import load_dotenv
 import os
 import json
 import difflib
+from google.cloud import firestore
 
 load_dotenv()
 
-newsapi = NewsApiClient(api_key=os.getenv("API_KEY"))
-
 app = Flask(__name__)
 CORS(app)
+newsapi = NewsApiClient(api_key=os.getenv("API_KEY"))
+
 
 client = MongoClient(
         host=os.getenv('MONGO_HOST'),
@@ -27,6 +28,40 @@ collection_article = db[os.getenv('MONGO_COLLECTION')]
 @app.route('/')
 def test_server():
     return "Welcome to the server!"
+
+db = firestore.Client.from_service_account_json('./talkative-admin-sdk.json')
+@app.route('/admin-data', methods=['GET'])
+def get_admin_data():
+    
+    admin_data = []
+    docs = db.collection('admin').stream()
+    for doc in docs: 
+        admin_data.append({doc.id: doc.to_dict()})
+
+    return jsonify({'status': 200, 'data': admin_data})
+@app.route('/insert-data-admin', methods=['POST'])
+def insert_data():
+    
+        data = request.json  # Assuming data is sent in JSON format
+
+        # Extracting data from the request
+        name = data.get('name')
+        email = data.get('email')
+        password = data.get('password')
+        role = data.get('role')
+        # Add more fields as needed
+        
+        # Creating a document to insert into the collection
+        doc_ref = db.collection('admin').document()  # Replace 'your_collection' with your actual collection name
+        doc_ref.set({
+            'name': name,
+            'email': email,
+            'password': password,
+            'role' : role
+            # Add more fields here
+        })
+
+        return jsonify({'status': 'success', 'message': 'Data inserted successfully'}), 200
 
 @app.route('/insert-article',methods=['POST'])
 def input_article():
@@ -60,20 +95,11 @@ def input_article():
     # Inserting data into the MongoDB collection
     result = collection_article.insert_one(article_data)
 
-    if result.inserted_id:
-        return jsonify({
+    return jsonify({
             'status' : 200,
             'message': "ok"}
             )
-    else:
-        return jsonify({
-            'status' : 500,
-            'message': 'Failed to insert article'
-            })
-
-def get_article():
-    print("hellow")
-
+  
 @app.route('/search-article',methods=['POST','GET'])
 def search_article():
     query = request.args.get('query')
@@ -142,7 +168,8 @@ def search_article():
         }
 
     return jsonify(response_data)
-    
+
+        
     
 
 

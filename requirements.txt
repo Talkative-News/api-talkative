@@ -3,4 +3,5 @@ flask
 Flask-Cors
 scikit-learn
 newsapi-python
+google-cloud-firestore
 # difflib
