@@ -39,6 +39,7 @@ def get_admin_data():
         admin_data.append({doc.id: doc.to_dict()})
 
     return jsonify({'status': 200, 'data': admin_data})
+
 @app.route('/insert-data-admin', methods=['POST'])
 def insert_data():
     
@@ -47,7 +48,7 @@ def insert_data():
         # Extracting data from the request
         name = data.get('name')
         email = data.get('email')
-        password = data.get('password')
+        # password = data.get('password')
         role = data.get('role')
         # Add more fields as needed
         
@@ -56,7 +57,7 @@ def insert_data():
         doc_ref.set({
             'name': name,
             'email': email,
-            'password': password,
+            # 'password': password,
             'role' : role
             # Add more fields here
         })
