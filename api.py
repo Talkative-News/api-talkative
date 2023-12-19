@@ -66,7 +66,7 @@ def insert_data():
 @app.route('/insert-article',methods=['POST'])
 def input_article():
     # print("hello world")
-    data = request.json  # Assuming the data is sent in JSON format
+    data = request.json # Assuming the data is sent in JSON format
 
     # Extracting data from the request
     input_sumber = data.get('sumber')
@@ -222,6 +222,29 @@ def get_by_pagination():
     response_data = {
         "status": 200,
         "data": paginated_data
+    }
+
+    return jsonify(response_data)
+
+@app.route('/get-data-db', methods=['GET'])
+def get_data_db():
+
+    collect = collection_article.find()
+    emp_collection = []
+    for data in collect:
+        collection_data = {
+            'author': data.get('author'),
+            'title': data.get('title'),
+            'description': data.get('description'),
+            'url': data.get('url'),
+            'publishedAt': data.get('publishedAt'),
+            'content': data.get('content')
+        }
+        emp_collection.append(collection_data)
+
+    response_data = {
+        "status": 200,
+        "data": emp_collection
     }
 
     return jsonify(response_data)
