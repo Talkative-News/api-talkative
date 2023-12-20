@@ -7,6 +7,8 @@ import os
 import json
 import difflib
 from google.cloud import firestore
+from werkzeug.utils import secure_filename
+
 
 load_dotenv()
 
@@ -14,6 +16,8 @@ app = Flask(__name__)
 CORS(app)
 newsapi = NewsApiClient(api_key=os.getenv("API_KEY"))
 
+UPLOAD_FOLDER = '/Users/christinaandrea/api-talkative/UPLOAD_IMG/'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 client = MongoClient(
         host=os.getenv('MONGO_HOST'),
@@ -68,18 +72,29 @@ def insert_data():
 def input_article():
     # print("hello world")
     data = request.json # Assuming the data is sent in JSON format
-
+    image_file = request.files['image']
     # Extracting data from the request
     input_sumber = data.get('sumber')
     input_author = data.get('penulis')
     input_title = data.get('judul')
+    input_url = data.get('url')
     input_date = data.get('tanggal_terbit')
     input_description = data.get('deskripsi')
     # input_source = data.get('sumber')
-    # input_category = data.get('kategori')
+    input_category = data.get('kategori')
     
     input_content = data.get('konten-artikel')
 
+    if 'image' in request.files:
+        image_file = request.files['image']
+        if image_file.filename != '':
+            filename = secure_filename(image_file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            image_file.save(filepath)
+            # Storing the image path in the MongoDB document
+            image_path = filepath  # You can also store the relative path or filename
+    else:
+        image_path = ''
     # Creating a document to insert into the collection
     article_data = {
         'source':input_sumber,
@@ -87,9 +102,9 @@ def input_article():
         'title': input_title,
         'description': input_description,
         'publishedAt': input_date,
-        # 'sumber': input_source,
-        # 'kategori': input_category,
-        
+        'url': input_url,
+        'urlToImg': image_path,
+        'category' : input_category,
         'content': input_content
     }
 
@@ -125,6 +140,7 @@ def search_article():
             'title' : items_list['title'],
             'description' : items_list['description'],
             'url' : items_list['url'],
+            'urlToImg':items_list['urlToImage'],
             'publishedAt' : new_date[0],
             'content' : items_list['content']
         }
@@ -137,7 +153,9 @@ def search_article():
                 'title': data.get('title'),
                 'description': data.get('description'),
                 'url': data.get('url'),
+                'urlToImg' : data.get('urlToImg'),
                 'publishedAt': data.get('publishedAt'),
+                'category' : data.get('category'),
                 'content': data.get('content')
             }
 
@@ -183,12 +201,13 @@ def get_by_pagination():
     for item in articles_list:
         new_date = item['publishedAt'].split("T")
         data_new = {
-            'author': item['author'],
-            'title': item['title'],
-            'description': item['description'],
-            'url': item['url'],
-            'publishedAt': new_date[0],
-            'content': item['content']
+            'author' : item['author'],
+            'title' : item['title'],
+            'description' : item['description'],
+            'url' : item['url'],
+            'urlToImg':item['urlToImage'],
+            'publishedAt' : new_date[0],
+            'content' : item['content']
         }
         emp.append(data_new)
 
@@ -196,12 +215,14 @@ def get_by_pagination():
     mongo_data = collection_article.find()
     for data in mongo_data:
         new_data = {
-            'author': data.get('author'),
-            'title': data.get('title'),
-            'description': data.get('description'),
-            'url': data.get('url'),
-            'publishedAt': data.get('publishedAt'),
-            'content': data.get('content')
+                'author': data.get('author'),
+                'title': data.get('title'),
+                'description': data.get('description'),
+                'url': data.get('url'),
+                'urlToImg' : data.get('urlToImg'),
+                'publishedAt': data.get('publishedAt'),
+                'category' : data.get('category'),
+                'content': data.get('content')
         }
         emp.append(new_data)
 
@@ -234,12 +255,14 @@ def get_data_db():
     emp_collection = []
     for data in collect:
         collection_data = {
-            'author': data.get('author'),
-            'title': data.get('title'),
-            'description': data.get('description'),
-            'url': data.get('url'),
-            'publishedAt': data.get('publishedAt'),
-            'content': data.get('content')
+                'author': data.get('author'),
+                'title': data.get('title'),
+                'description': data.get('description'),
+                'url': data.get('url'),
+                'urlToImg' : data.get('urlToImg'),
+                'publishedAt': data.get('publishedAt'),
+                'category' : data.get('category'),
+                'content': data.get('content')
         }
         emp_collection.append(collection_data)
 
@@ -249,6 +272,60 @@ def get_data_db():
     }
 
     return jsonify(response_data)
+
+@app.route('/get-length-news', methods=['GET'])
+def get_length_news():
+    query = request.args.get('query')
+
+    # query = 
+    all_articles = newsapi.get_everything(q=query)
+
+    # Assuming you're interested in the first matching title
+   
+
+    articles_json = json.dumps(all_articles, indent=4)
+    articles_list = list((json.loads(articles_json))['articles'])
+
+    emp = []
+    # print(type(articles_list))
+    for i in range(len(articles_list)):
+        # print(articles_list[i], "\n")
+        items_list = articles_list[i]
+        new_date = items_list['publishedAt'].split("T")
+        data_new = {
+            'author' : items_list['author'],
+            'title' : items_list['title'],
+            'description' : items_list['description'],
+            'url' : items_list['url'],
+            'urlToImg':items_list['urlToImage'],
+            'publishedAt' : new_date[0],
+            'content' : items_list['content']
+        }
+        emp.append(data_new)
+
+    mongo_data = collection_article.find()
+    for data in mongo_data:
+        new_data = {
+                'author': data.get('author'),
+                'title': data.get('title'),
+                'description': data.get('description'),
+                'url': data.get('url'),
+                'urlToImg' : data.get('urlToImg'),
+                'publishedAt': data.get('publishedAt'),
+                'category' : data.get('category'),
+                'content': data.get('content')
+            }
+
+        emp.append(new_data)
+
+    news_length = len(emp)
+
+    response_data = {
+        "status": 200,
+        "data": news_length
+    }
+
+    return response_data
 
 
 if __name__ == '__main__':
