@@ -161,30 +161,25 @@ def search_article():
 
         emp.append(new_data)
 
-    title_only = []
-    for x in range(len(emp)):
-        title_only.append(emp[x]['title'].lower())
+    title_only = []  # Initialize title_only list
+    for article in emp:
+        if article.get('title') and article['title'].lower() == query.lower():
+            title_only.append(article['title'].lower())
 
-    threshold = 0.3
+    threshold = 0.1
     for titles in title_only:
-        sim = difflib.SequenceMatcher(None, titles, query)
-        similarity_ratio = sim.ratio()
-
         for article in emp:
-                if article['title'].lower() == titles:
-                    if similarity_ratio > threshold : 
-                        article['similarity_ratio'] = similarity_ratio
-                    else : 
-                        article['similarity_ratio'] = None
-    # print(emp[2])
-    emp = sorted(emp, key=lambda x: x.get('similarity_ratio', 0), reverse=True)   
+            if article['title'].lower() == titles:
+                sim = difflib.SequenceMatcher(None, titles, query)
+                similarity_ratio = sim.ratio()
+                article['similarity_ratio'] = similarity_ratio if similarity_ratio > threshold else None
 
-    with app.app_context():
-        
-        response_data = {
-            "status": 200,
-            "data": emp
-        }
+    emp = sorted(emp, key=lambda x: x.get('similarity_ratio', 0), reverse=True)
+
+    response_data = {
+        "status": 200,
+        "data": emp
+    }
 
     return jsonify(response_data)
 
