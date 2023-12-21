@@ -8,7 +8,7 @@ import json
 import difflib
 from google.cloud import firestore
 from werkzeug.utils import secure_filename
-
+import uuid
 
 load_dotenv()
 
@@ -95,8 +95,10 @@ def input_article():
             image_path = filepath  # You can also store the relative path or filename
     else:
         image_path = ''
+    uuid = uuid.uuid4()
     # Creating a document to insert into the collection
     article_data = {
+        'id' : uuid,
         'source':input_sumber,
         'author': input_author,
         'title': input_title,
@@ -130,12 +132,15 @@ def search_article():
     articles_list = list((json.loads(articles_json))['articles'])
 
     emp = []
+    
     # print(type(articles_list))
     for i in range(len(articles_list)):
         # print(articles_list[i], "\n")
+        uuidValue = uuid.uuid4()
         items_list = articles_list[i]
         new_date = items_list['publishedAt'].split("T")
         data_new = {
+            'id' : uuidValue,
             'author' : items_list['author'],
             'title' : items_list['title'],
             'description' : items_list['description'],
