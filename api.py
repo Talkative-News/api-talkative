@@ -95,10 +95,10 @@ def input_article():
             image_path = filepath  # You can also store the relative path or filename
     else:
         image_path = ''
-    uuid = uuid.uuid4()
+    uuidValue = uuid.uuid4()
     # Creating a document to insert into the collection
     article_data = {
-        'id' : uuid,
+        'id' : uuidValue,
         'source':input_sumber,
         'author': input_author,
         'title': input_title,
@@ -326,6 +326,45 @@ def get_length_news():
     }
 
     return response_data
+
+
+@app.route('/get-headlines', methods=['GET'])
+def get_headlines_news():
+    headlines = newsapi.get_top_headlines(country='us')
+
+    articles_json = json.dumps(headlines, indent=4)
+    articles_list = list((json.loads(articles_json))['articles'])
+
+    emp = []
+
+    for i in range(len(articles_list)):
+        # print(articles_list[i], "\n")
+        items_list = articles_list[i]
+        new_date = str(items_list['publishedAt']).split("T")
+        uuidValue = uuid.uuid4()
+        data_new = {
+            'id' : uuidValue,
+            'source':items_list['source']['name'],
+            'author' : items_list['author'],
+            'title' : items_list['title'],
+            'description' : items_list['description'],
+            'url' : items_list['url'],
+            'urlToImg' : items_list['urlToImage'],
+            'publishedAt' : new_date[0],
+            'content' : items_list['content']
+        }
+
+
+        emp.append(data_new)
+
+
+    response_data = {
+        "status": 200,
+        "data": emp
+    }
+
+
+    return jsonify(response_data)
 
 
 if __name__ == '__main__':
